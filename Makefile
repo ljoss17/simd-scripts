@@ -4,7 +4,7 @@ init: kill-dev
 	@echo "Initializing both blockchains..."
 	./network/init.sh
 	./network/start.sh
-	@echo "Initializing relayer..." 
+	@echo "Initializing hermes relayer..."
 	./network/hermes/restore-keys.sh
 	./network/hermes/create-conn.sh
 
@@ -18,4 +18,16 @@ start-rly:
 kill-dev:
 	@echo "Killing icad and removing previous data"
 	-@rm -rf ./data
+	-@rm -rf ./network/relayer/config/
 	-@killall simd 2>/dev/null
+
+init-go-relayer: kill-dev
+	@echo "Initializing both blockchains..."
+	./network/init.sh
+	./network/start.sh
+	@echo "Initializing go-relayer..."
+	./network/relayer/setup-relayer.sh
+	./network/relayer/create-path.sh
+
+start-go-rly:
+	./network/relayer/start.sh
