@@ -7,9 +7,16 @@ set -e
 ### Sleep is needed otherwise the relayer crashes when trying to init
 sleep 1
 
-### Restore Keys
-$HERMES_BINARY -c ./network/hermes/config.toml keys restore test-1 -m "alley afraid soup fall idea toss can goose become valve initial strong forward bright dish figure check leopard decide warfare hub unusual join cart"
+### Restore Keys for chain test-1
+$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain test-1 --mnemonic-file network/hermes/relayer1_mnemonic
+sleep 5
+$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain test-1 --mnemonic-file network/hermes/wallet1_mnemonic --key-name wallet1
+sleep 5
+$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain test-1 --mnemonic-file network/hermes/wallet2_mnemonic --key-name wallet2
 sleep 5
 
-$HERMES_BINARY -c ./network/hermes/config.toml keys restore test-2 -m "record gift you once hip style during joke field prize dust unique length more pencil transfer quit train device arrive energy sort steak upset"
+### Restore Keys for chain test-2
+$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain test-2 --mnemonic-file network/hermes/relayer2_mnemonic
+sleep 5
+$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain test-2 --mnemonic-file network/hermes/wallet3_mnemonic --key-name wallet3
 sleep 5
