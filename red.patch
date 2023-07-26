@@ -1,0 +1,623 @@
+diff --git a/.gitignore b/.gitignore
+index 1269488..f0419ff 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1 +1,3 @@
+ data
++*.json
++.DS_Store
+diff --git a/network/hermes/config.toml b/network/hermes/config.toml
+index 96c2363..002b9c5 100644
+--- a/network/hermes/config.toml
++++ b/network/hermes/config.toml
+@@ -3,7 +3,7 @@
+ 
+ # Specify the verbosity for the relayer logging output. Default: 'info'
+ # Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
+-log_level = 'trace'
++log_level = 'info'
+ 
+ 
+ # Specify the mode to be used by the relayer. [Required]
+@@ -58,12 +58,21 @@ clear_on_start = true
+ # [Default: true]
+ tx_confirmation = true
+ 
++# Auto register the counterparty payee on a destination chain to
++# the relayer's address on the source chain. This can be used
++# for simple configuration of the relayer to receive fees for
++# relaying RecvPacket on fee-enabled channels.
++# For more complex configuration, turn this off and use the CLI
++# to manually register the payee addresses.
++# [Default: false]
++auto_register_counterparty_payee = true
++
+ # The REST section defines parameters for Hermes' built-in RESTful API.
+ # https://hermes.informal.systems/rest.html
+ [rest]
+ 
+ # Whether or not to enable the REST service. Default: false
+-enabled = true
++enabled = false
+ 
+ # Specify the IPv4/6 host over which the built-in HTTP server will serve the RESTful
+ # API requests. Default: 127.0.0.1
+@@ -89,14 +98,35 @@ host = '127.0.0.1'
+ # by the telemetry service. Default: 3001
+ port = 3001
+ 
++#[[chains]]
++#id = 'quicksilver-1'
++#rpc_addr = 'http://127.0.0.1:16657'
++#grpc_addr = 'http://127.0.0.1:8090'
++#event_source = { mode = 'push', url = 'ws://127.0.0.1:16657/websocket', batch_delay = '500ms' }
++#rpc_timeout = '10s'
++#account_prefix = 'quick'
++#key_name = 'testkey'
++#store_prefix = 'ibc'
++#default_gas = 100000
++#max_gas = 3000000
++#gas_price = { price = 0.001, denom = 'stake' }
++#gas_multiplier = 1.1
++#max_msg_num = 30
++#max_tx_size = 2097152
++#clock_drift = '5s'
++#max_block_time = '10s'
++#trusting_period = '14days'
++#trust_threshold = { numerator = '1', denominator = '3' }
++#address_type = { derivation = 'cosmos' }
++
+ [[chains]]
+-id = 'test-1'
++id = 'ibc1'
+ rpc_addr = 'http://127.0.0.1:16657'
+ grpc_addr = 'http://127.0.0.1:8090'
+-websocket_addr = 'ws://127.0.0.1:16657/websocket'
++event_source = { mode = 'push', url = 'ws://127.0.0.1:16657/websocket', batch_delay = '1000ms' }
+ rpc_timeout = '10s'
+ account_prefix = 'cosmos'
+-key_name = 'testkey'
++key_name = 'wallet1'
+ store_prefix = 'ibc'
+ default_gas = 100000
+ max_gas = 3000000
+@@ -110,14 +140,21 @@ trusting_period = '14days'
+ trust_threshold = { numerator = '1', denominator = '3' }
+ address_type = { derivation = 'cosmos' }
+ 
++[chains.packet_filter]
++policy = 'allow'
++list = [
++  ['ica*', '*'], # allow relaying on all channels whose port starts with `ica`
++  ['transfer', 'channel-0'],
++]
++
+ [[chains]]
+-id = 'test-2'
++id = 'ibc2'
+ rpc_addr = 'http://127.0.0.1:26657'
+ grpc_addr = 'http://127.0.0.1:9090'
+-websocket_addr = 'ws://127.0.0.1:26657/websocket'
++event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '1000ms' }
+ rpc_timeout = '10s'
+ account_prefix = 'cosmos'
+-key_name = 'testkey'
++key_name = 'wallet1'
+ store_prefix = 'ibc'
+ default_gas = 100000
+ max_gas = 3000000
+@@ -130,3 +167,41 @@ max_block_time = '10s'
+ trusting_period = '14days'
+ trust_threshold = { numerator = '1', denominator = '3' }
+ address_type = { derivation = 'cosmos' }
++
++[chains.packet_filter]
++policy = 'allow'
++list = [
++  ['ica*', '*'], # allow relaying on all channels whose port starts with `ica`
++  ['transfer', 'channel-0'],
++]
++
++#[[chains]]
++#id = 'stargaze-1'
++#rpc_addr = 'http://127.0.0.1:26657'
++#grpc_addr = 'http://127.0.0.1:9090'
++#event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }
++#rpc_timeout = '10s'
++#account_prefix = 'stars'
++#key_name = 'testkey'
++#store_prefix = 'ibc'
++#default_gas = 100000
++#max_gas = 3000000
++#gas_price = { price = 0.001, denom = 'stake' }
++#gas_multiplier = 1.1
++#max_msg_num = 30
++#max_tx_size = 2097152
++#clock_drift = '5s'
++#max_block_time = '10s'
++#trusting_period = '14days'
++#trust_threshold = { numerator = '1', denominator = '3' }
++#address_type = { derivation = 'cosmos' }
++
++#[chains.packet_filter]
++#policy = 'allow'
++#list = [
++#  ['icahost', 'channel-5'],
++#  ['icahost', 'channel-6'],
++#  ['icahost', 'channel-7'],
++#  ['icahost', 'channel-8'],
++#  ['transfer', 'channel-0'],
++#]
+diff --git a/network/hermes/config2.toml b/network/hermes/config2.toml
+new file mode 100644
+index 0000000..dc200d7
+--- /dev/null
++++ b/network/hermes/config2.toml
+@@ -0,0 +1,207 @@
++# The global section has parameters that apply globally to the relayer operation.
++[global]
++
++# Specify the verbosity for the relayer logging output. Default: 'info'
++# Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
++log_level = 'info'
++
++
++# Specify the mode to be used by the relayer. [Required]
++[mode]
++
++# Specify the client mode.
++[mode.clients]
++
++# Whether or not to enable the client workers. [Required]
++enabled = true
++
++# Whether or not to enable periodic refresh of clients. [Default: true]
++# Note: Even if this is disabled, clients will be refreshed automatically if
++#      there is activity on a connection or channel they are involved with.
++refresh = true
++
++# Whether or not to enable misbehaviour detection for clients. [Default: false]
++misbehaviour = true
++
++# Specify the connections mode.
++[mode.connections]
++
++# Whether or not to enable the connection workers for handshake completion. [Required]
++enabled = true
++
++# Specify the channels mode.
++[mode.channels]
++
++# Whether or not to enable the channel workers for handshake completion. [Required]
++enabled = true
++
++# Specify the packets mode.
++[mode.packets]
++
++# Whether or not to enable the packet workers. [Required]
++enabled = true
++
++# Parametrize the periodic packet clearing feature.
++# Interval (in number of blocks) at which pending packets
++# should be eagerly cleared. A value of '0' will disable
++# periodic packet clearing. [Default: 100]
++clear_interval = 100
++
++# Whether or not to clear packets on start. [Default: false]
++clear_on_start = true
++
++# Toggle the transaction confirmation mechanism.
++# The tx confirmation mechanism periodically queries the `/tx_search` RPC
++# endpoint to check that previously-submitted transactions
++# (to any chain in this config file) have delivered successfully.
++# Experimental feature. Affects telemetry if set to false.
++# [Default: true]
++tx_confirmation = true
++
++# Auto register the counterparty payee on a destination chain to
++# the relayer's address on the source chain. This can be used
++# for simple configuration of the relayer to receive fees for
++# relaying RecvPacket on fee-enabled channels.
++# For more complex configuration, turn this off and use the CLI
++# to manually register the payee addresses.
++# [Default: false]
++auto_register_counterparty_payee = true
++
++# The REST section defines parameters for Hermes' built-in RESTful API.
++# https://hermes.informal.systems/rest.html
++[rest]
++
++# Whether or not to enable the REST service. Default: false
++enabled = false
++
++# Specify the IPv4/6 host over which the built-in HTTP server will serve the RESTful
++# API requests. Default: 127.0.0.1
++host = '127.0.0.1'
++
++# Specify the port over which the built-in HTTP server will serve the restful API
++# requests. Default: 3000
++port = 3000
++
++
++# The telemetry section defines parameters for Hermes' built-in telemetry capabilities.
++# https://hermes.informal.systems/telemetry.html
++[telemetry]
++
++# Whether or not to enable the telemetry service. Default: false
++enabled = false
++
++# Specify the IPv4/6 host over which the built-in HTTP server will serve the metrics
++# gathered by the telemetry service. Default: 127.0.0.1
++host = '127.0.0.1'
++
++# Specify the port over which the built-in HTTP server will serve the metrics gathered
++# by the telemetry service. Default: 3001
++port = 3001
++
++#[[chains]]
++#id = 'quicksilver-1'
++#rpc_addr = 'http://127.0.0.1:16657'
++#grpc_addr = 'http://127.0.0.1:8090'
++#event_source = { mode = 'push', url = 'ws://127.0.0.1:16657/websocket', batch_delay = '500ms' }
++#rpc_timeout = '10s'
++#account_prefix = 'quick'
++#key_name = 'testkey'
++#store_prefix = 'ibc'
++#default_gas = 100000
++#max_gas = 3000000
++#gas_price = { price = 0.001, denom = 'stake' }
++#gas_multiplier = 1.1
++#max_msg_num = 30
++#max_tx_size = 2097152
++#clock_drift = '5s'
++#max_block_time = '10s'
++#trusting_period = '14days'
++#trust_threshold = { numerator = '1', denominator = '3' }
++#address_type = { derivation = 'cosmos' }
++
++[[chains]]
++id = 'ibc1'
++rpc_addr = 'http://127.0.0.1:16657'
++grpc_addr = 'http://127.0.0.1:8090'
++event_source = { mode = 'push', url = 'ws://127.0.0.1:16657/websocket', batch_delay = '10ms' }
++rpc_timeout = '10s'
++account_prefix = 'cosmos'
++key_name = 'testkey'
++store_prefix = 'ibc'
++default_gas = 100000
++max_gas = 3000000
++gas_price = { price = 0.001, denom = 'stake' }
++gas_multiplier = 1.1
++max_msg_num = 30
++max_tx_size = 2097152
++clock_drift = '5s'
++max_block_time = '10s'
++trusting_period = '14days'
++trust_threshold = { numerator = '1', denominator = '3' }
++address_type = { derivation = 'cosmos' }
++
++[chains.packet_filter]
++policy = 'allow'
++list = [
++  ['ica*', '*'], # allow relaying on all channels whose port starts with `ica`
++  ['transfer', 'channel-0'],
++]
++
++[[chains]]
++id = 'ibc2'
++rpc_addr = 'http://127.0.0.1:26657'
++grpc_addr = 'http://127.0.0.1:9090'
++event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '10ms' }
++rpc_timeout = '10s'
++account_prefix = 'cosmos'
++key_name = 'testkey'
++store_prefix = 'ibc'
++default_gas = 100000
++max_gas = 3000000
++gas_price = { price = 0.001, denom = 'stake' }
++gas_multiplier = 1.1
++max_msg_num = 30
++max_tx_size = 2097152
++clock_drift = '5s'
++max_block_time = '10s'
++trusting_period = '14days'
++trust_threshold = { numerator = '1', denominator = '3' }
++address_type = { derivation = 'cosmos' }
++
++[chains.packet_filter]
++policy = 'allow'
++list = [
++  ['ica*', '*'], # allow relaying on all channels whose port starts with `ica`
++  ['transfer', 'channel-0'],
++]
++
++#[[chains]]
++#id = 'stargaze-1'
++#rpc_addr = 'http://127.0.0.1:26657'
++#grpc_addr = 'http://127.0.0.1:9090'
++#event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }
++#rpc_timeout = '10s'
++#account_prefix = 'stars'
++#key_name = 'testkey'
++#store_prefix = 'ibc'
++#default_gas = 100000
++#max_gas = 3000000
++#gas_price = { price = 0.001, denom = 'stake' }
++#gas_multiplier = 1.1
++#max_msg_num = 30
++#max_tx_size = 2097152
++#clock_drift = '5s'
++#max_block_time = '10s'
++#trusting_period = '14days'
++#trust_threshold = { numerator = '1', denominator = '3' }
++#address_type = { derivation = 'cosmos' }
++
++#[chains.packet_filter]
++#policy = 'allow'
++#list = [
++#  ['icahost', 'channel-5'],
++#  ['icahost', 'channel-6'],
++#  ['icahost', 'channel-7'],
++#  ['icahost', 'channel-8'],
++#  ['transfer', 'channel-0'],
++#]
+diff --git a/network/hermes/create-conn.sh b/network/hermes/create-conn.sh
+index 0c4b393..25e095a 100755
+--- a/network/hermes/create-conn.sh
++++ b/network/hermes/create-conn.sh
+@@ -6,6 +6,7 @@ set -e
+ 
+ ### Configure the clients and connection
+ echo "Initiating connection handshake..."
+-$HERMES_BINARY --config $CONFIG_DIR create connection --a-chain test-1 --b-chain test-2
++#$HERMES_BINARY --config $CONFIG_DIR create connection --a-chain quicksilver-1 --b-chain stargaze-1
++$HERMES_BINARY --config $CONFIG_DIR create connection --a-chain ibc1 --b-chain ibc2
+ 
+ sleep 2
+diff --git a/network/hermes/relayer3_mnemonic b/network/hermes/relayer3_mnemonic
+new file mode 100644
+index 0000000..74393da
+--- /dev/null
++++ b/network/hermes/relayer3_mnemonic
+@@ -0,0 +1 @@
++casino correct depart novel pull guide mammal crawl used tobacco hire bless real soul ostrich raise embark soft label crack mail era window cricket
+diff --git a/network/hermes/restore-keys.sh b/network/hermes/restore-keys.sh
+index d172aef..ee14d6d 100755
+--- a/network/hermes/restore-keys.sh
++++ b/network/hermes/restore-keys.sh
+@@ -8,15 +8,29 @@ set -e
+ sleep 1
+ 
+ ### Restore Keys for chain test-1
+-$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain test-1 --mnemonic-file network/hermes/relayer1_mnemonic
++#$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain quicksilver-1 --mnemonic-file network/hermes/relayer1_mnemonic --overwrite
++#sleep 5
++#$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain quicksilver-1 --mnemonic-file network/hermes/wallet1_mnemonic --key-name wallet1 --overwrite
++#sleep 5
++#$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain quicksilver-1 --mnemonic-file network/hermes/wallet2_mnemonic --key-name wallet2 --overwrite
++#sleep 5
++
++### Restore Keys for chain test-1
++$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain ibc1 --mnemonic-file network/hermes/relayer1_mnemonic --overwrite
+ sleep 5
+-$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain test-1 --mnemonic-file network/hermes/wallet1_mnemonic --key-name wallet1
++$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain ibc1 --mnemonic-file network/hermes/wallet1_mnemonic --key-name wallet1 --overwrite
+ sleep 5
+-$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain test-1 --mnemonic-file network/hermes/wallet2_mnemonic --key-name wallet2
++$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain ibc1 --mnemonic-file network/hermes/wallet2_mnemonic --key-name wallet2 --overwrite
+ sleep 5
+ 
+ ### Restore Keys for chain test-2
+-$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain test-2 --mnemonic-file network/hermes/relayer2_mnemonic
++$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain ibc2 --mnemonic-file network/hermes/relayer2_mnemonic --overwrite
+ sleep 5
+-$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain test-2 --mnemonic-file network/hermes/wallet3_mnemonic --key-name wallet3
++$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain ibc2 --mnemonic-file network/hermes/wallet3_mnemonic --key-name wallet3 --overwrite
+ sleep 5
++
++### Restore Keys for chain test-2
++#$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain stargaze-1 --mnemonic-file network/hermes/relayer2_mnemonic --overwrite
++#sleep 5
++#$HERMES_BINARY --config ./network/hermes/config.toml keys add --chain stargaze-1 --mnemonic-file network/hermes/wallet3_mnemonic --key-name wallet3 --overwrite
++#sleep 5
+diff --git a/network/hermes/variables.sh b/network/hermes/variables.sh
+index eabfd17..c4da483 100755
+--- a/network/hermes/variables.sh
++++ b/network/hermes/variables.sh
+@@ -1,4 +1,4 @@
+  #!/bin/bash
+-HERMES_BINARY=hermes
++HERMES_BINARY=~/.hermes/bin/hermes
+ HERMES_DIRECTORY=./network/hermes/
+ CONFIG_DIR=./network/hermes/config.toml
+diff --git a/network/hermes/wallet4_mnemonic b/network/hermes/wallet4_mnemonic
+new file mode 100644
+index 0000000..ec62ca4
+--- /dev/null
++++ b/network/hermes/wallet4_mnemonic
+@@ -0,0 +1 @@
++turn unhappy vital misery rifle shell margin weapon daring wrap spawn other pen chronic belt clever humble retire type chef bone witness avocado extra
+diff --git a/network/init.sh b/network/init.sh
+index 934106a..6713113 100755
+--- a/network/init.sh
++++ b/network/init.sh
+@@ -1,9 +1,15 @@
+ #!/bin/bash
+ 
+-BINARY=simd
++BINARY1=simd
++BINARY2=simd
+ CHAIN_DIR=./data
+-CHAINID_1=test-1
+-CHAINID_2=test-2
++CHAINID_1=ibc1
++CHAINID_2=ibc2
++#BINARY1=quicksilverd
++#BINARY2=starsd
++#CHAIN_DIR=./data
++#CHAINID_1=quicksilver-1
++#CHAINID_2=stargaze-1
+ VAL_MNEMONIC_1="clock post desk civil pottery foster expand merit dash seminar song memory figure uniform spice circle try happy obvious trash crime hybrid hood cushion"
+ VAL_MNEMONIC_2="angry twist harsh drastic left brass behave host shove marriage fall update business leg direct reward object ugly security warm tuna model broccoli choice"
+ WALLET_MNEMONIC_1="banner spread envelope side kite person disagree path silver will brother under couch edit food venture squirrel civil budget number acquire point work mass"
+@@ -22,9 +28,15 @@ ROSETTA_1=8080
+ ROSETTA_2=8081
+ 
+ # Stop if it is already running 
+-if pgrep -x "$BINARY" >/dev/null; then
+-    echo "Terminating $BINARY..."
+-    killall $BINARY
++if pgrep -x "$BINARY1" >/dev/null; then
++    echo "Terminating $BINARY1..."
++    killall $BINARY1
++fi
++
++# Stop if it is already running 
++if pgrep -x "$BINARY2" >/dev/null; then
++    echo "Terminating $BINARY2..."
++    killall $BINARY2
+ fi
+ 
+ echo "Removing previous data..."
+@@ -44,33 +56,33 @@ fi
+ 
+ echo "Initializing $CHAINID_1..."
+ echo "Initializing $CHAINID_2..."
+-$BINARY init test --home $CHAIN_DIR/$CHAINID_1 --chain-id=$CHAINID_1
+-$BINARY init test --home $CHAIN_DIR/$CHAINID_2 --chain-id=$CHAINID_2
++$BINARY1 init test --home $CHAIN_DIR/$CHAINID_1 --chain-id=$CHAINID_1
++$BINARY2 init test --home $CHAIN_DIR/$CHAINID_2 --chain-id=$CHAINID_2
+ 
+ echo "Adding genesis accounts..."
+-echo $VAL_MNEMONIC_1 | $BINARY keys add val1 --home $CHAIN_DIR/$CHAINID_1 --recover --keyring-backend=test
+-echo $VAL_MNEMONIC_2 | $BINARY keys add val2 --home $CHAIN_DIR/$CHAINID_2 --recover --keyring-backend=test
+-echo $WALLET_MNEMONIC_1 | $BINARY keys add wallet1 --home $CHAIN_DIR/$CHAINID_1 --recover --keyring-backend=test
+-echo $WALLET_MNEMONIC_2 | $BINARY keys add wallet2 --home $CHAIN_DIR/$CHAINID_1 --recover --keyring-backend=test
+-echo $WALLET_MNEMONIC_3 | $BINARY keys add wallet3 --home $CHAIN_DIR/$CHAINID_2 --recover --keyring-backend=test
+-echo $WALLET_MNEMONIC_4 | $BINARY keys add wallet4 --home $CHAIN_DIR/$CHAINID_2 --recover --keyring-backend=test
+-echo $RLY_MNEMONIC_1 | $BINARY keys add rly1 --home $CHAIN_DIR/$CHAINID_1 --recover --keyring-backend=test 
+-echo $RLY_MNEMONIC_2 | $BINARY keys add rly2 --home $CHAIN_DIR/$CHAINID_2 --recover --keyring-backend=test 
++echo $VAL_MNEMONIC_1 | $BINARY1 keys add val1 --home $CHAIN_DIR/$CHAINID_1 --recover --keyring-backend=test
++echo $VAL_MNEMONIC_2 | $BINARY2 keys add val2 --home $CHAIN_DIR/$CHAINID_2 --recover --keyring-backend=test
++echo $WALLET_MNEMONIC_1 | $BINARY1 keys add wallet1 --home $CHAIN_DIR/$CHAINID_1 --recover --keyring-backend=test
++echo $WALLET_MNEMONIC_2 | $BINARY1 keys add wallet2 --home $CHAIN_DIR/$CHAINID_1 --recover --keyring-backend=test
++echo $WALLET_MNEMONIC_3 | $BINARY2 keys add wallet3 --home $CHAIN_DIR/$CHAINID_2 --recover --keyring-backend=test
++echo $WALLET_MNEMONIC_4 | $BINARY2 keys add wallet4 --home $CHAIN_DIR/$CHAINID_2 --recover --keyring-backend=test
++echo $RLY_MNEMONIC_1 | $BINARY1 keys add rly1 --home $CHAIN_DIR/$CHAINID_1 --recover --keyring-backend=test
++echo $RLY_MNEMONIC_2 | $BINARY2 keys add rly2 --home $CHAIN_DIR/$CHAINID_2 --recover --keyring-backend=test
+ 
+-$BINARY add-genesis-account $($BINARY --home $CHAIN_DIR/$CHAINID_1 keys show val1 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_1
+-$BINARY add-genesis-account $($BINARY --home $CHAIN_DIR/$CHAINID_2 keys show val2 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_2
+-$BINARY add-genesis-account $($BINARY --home $CHAIN_DIR/$CHAINID_1 keys show wallet1 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_1
+-$BINARY add-genesis-account $($BINARY --home $CHAIN_DIR/$CHAINID_1 keys show wallet2 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_1
+-$BINARY add-genesis-account $($BINARY --home $CHAIN_DIR/$CHAINID_2 keys show wallet3 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_2
+-$BINARY add-genesis-account $($BINARY --home $CHAIN_DIR/$CHAINID_2 keys show wallet4 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_2
+-$BINARY add-genesis-account $($BINARY --home $CHAIN_DIR/$CHAINID_1 keys show rly1 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_1
+-$BINARY add-genesis-account $($BINARY --home $CHAIN_DIR/$CHAINID_2 keys show rly2 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_2
++$BINARY1 add-genesis-account $($BINARY1 --home $CHAIN_DIR/$CHAINID_1 keys show val1 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_1
++$BINARY2 add-genesis-account $($BINARY2 --home $CHAIN_DIR/$CHAINID_2 keys show val2 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_2
++$BINARY1 add-genesis-account $($BINARY1 --home $CHAIN_DIR/$CHAINID_1 keys show wallet1 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_1
++$BINARY1 add-genesis-account $($BINARY1 --home $CHAIN_DIR/$CHAINID_1 keys show wallet2 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_1
++$BINARY2 add-genesis-account $($BINARY2 --home $CHAIN_DIR/$CHAINID_2 keys show wallet3 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_2
++$BINARY2 add-genesis-account $($BINARY2 --home $CHAIN_DIR/$CHAINID_2 keys show wallet4 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_2
++$BINARY1 add-genesis-account $($BINARY1 --home $CHAIN_DIR/$CHAINID_1 keys show rly1 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_1
++$BINARY2 add-genesis-account $($BINARY2 --home $CHAIN_DIR/$CHAINID_2 keys show rly2 --keyring-backend test -a) 100000000000stake  --home $CHAIN_DIR/$CHAINID_2
+ 
+ echo "Creating and collecting gentx..."
+-$BINARY gentx val1 7000000000stake --home $CHAIN_DIR/$CHAINID_1 --chain-id $CHAINID_1 --keyring-backend test
+-$BINARY gentx val2 7000000000stake --home $CHAIN_DIR/$CHAINID_2 --chain-id $CHAINID_2 --keyring-backend test
+-$BINARY collect-gentxs --home $CHAIN_DIR/$CHAINID_1
+-$BINARY collect-gentxs --home $CHAIN_DIR/$CHAINID_2
++$BINARY1 gentx val1 7000000000stake --home $CHAIN_DIR/$CHAINID_1 --chain-id $CHAINID_1 --keyring-backend test
++$BINARY2 gentx val2 7000000000stake --home $CHAIN_DIR/$CHAINID_2 --chain-id $CHAINID_2 --keyring-backend test
++$BINARY1 collect-gentxs --home $CHAIN_DIR/$CHAINID_1
++$BINARY2 collect-gentxs --home $CHAIN_DIR/$CHAINID_2
+ 
+ echo "Changing defaults and ports in app.toml and config.toml files..."
+ sed -i -e 's#"tcp://0.0.0.0:26656"#"tcp://0.0.0.0:'"$P2PPORT_1"'"#g' $CHAIN_DIR/$CHAINID_1/config/config.toml
+@@ -80,8 +92,11 @@ sed -i -e 's/timeout_propose = "3s"/timeout_propose = "1s"/g' $CHAIN_DIR/$CHAINI
+ sed -i -e 's/index_all_keys = false/index_all_keys = true/g' $CHAIN_DIR/$CHAINID_1/config/config.toml
+ sed -i -e 's/enable = false/enable = true/g' $CHAIN_DIR/$CHAINID_1/config/app.toml
+ sed -i -e 's/swagger = false/swagger = true/g' $CHAIN_DIR/$CHAINID_1/config/app.toml
+-sed -i -e 's#"tcp://0.0.0.0:1317"#"tcp://0.0.0.0:'"$RESTPORT_1"'"#g' $CHAIN_DIR/$CHAINID_1/config/app.toml
++sed -i -e 's#"tcp://localhost:1317"#"tcp://localhost:'"$RESTPORT_1"'"#g' $CHAIN_DIR/$CHAINID_1/config/app.toml
++#sed -i -e 's#"tcp://0.0.0.0:1317"#"tcp://localhost:'"$RESTPORT_1"'"#g' $CHAIN_DIR/$CHAINID_1/config/app.toml
+ sed -i -e 's#":8080"#":'"$ROSETTA_1"'"#g' $CHAIN_DIR/$CHAINID_1/config/app.toml
++sed -i -e 's#"voting_period": "172800s"#"voting_period": "50s"#g' $CHAIN_DIR/$CHAINID_1/config/genesis.json
++sed -i -e 's#"max_deposit_period": "172800s"#"max_deposit_period": "50s"#g' $CHAIN_DIR/$CHAINID_1/config/genesis.json
+ 
+ sed -i -e 's#"tcp://0.0.0.0:26656"#"tcp://0.0.0.0:'"$P2PPORT_2"'"#g' $CHAIN_DIR/$CHAINID_2/config/config.toml
+ sed -i -e 's#"tcp://127.0.0.1:26657"#"tcp://0.0.0.0:'"$RPCPORT_2"'"#g' $CHAIN_DIR/$CHAINID_2/config/config.toml
+@@ -90,5 +105,8 @@ sed -i -e 's/timeout_propose = "3s"/timeout_propose = "1s"/g' $CHAIN_DIR/$CHAINI
+ sed -i -e 's/index_all_keys = false/index_all_keys = true/g' $CHAIN_DIR/$CHAINID_2/config/config.toml
+ sed -i -e 's/enable = false/enable = true/g' $CHAIN_DIR/$CHAINID_2/config/app.toml
+ sed -i -e 's/swagger = false/swagger = true/g' $CHAIN_DIR/$CHAINID_2/config/app.toml
+-sed -i -e 's#"tcp://0.0.0.0:1317"#"tcp://0.0.0.0:'"$RESTPORT_2"'"#g' $CHAIN_DIR/$CHAINID_2/config/app.toml
++sed -i -e 's#"tcp://localhost:1317"#"tcp://localhost:'"$RESTPORT_2"'"#g' $CHAIN_DIR/$CHAINID_2/config/app.toml
++#sed -i -e 's#"tcp://0.0.0.0:1317"#"tcp://localhost:'"$RESTPORT_2"'"#g' $CHAIN_DIR/$CHAINID_2/config/app.toml
+ sed -i -e 's#":8080"#":'"$ROSETTA_2"'"#g' $CHAIN_DIR/$CHAINID_2/config/app.toml
++sed -i -e 's#"voting_period": "172800s"#"voting_period": "50s"#g' $CHAIN_DIR/$CHAINID_2/config/genesis.json
++sed -i -e 's#"max_deposit_period": "172800s"#"max_deposit_period": "50s"#g' $CHAIN_DIR/$CHAINID_2/config/genesis.json
+diff --git a/network/relayer/variables.sh b/network/relayer/variables.sh
+index ecec397..4bbf432 100755
+--- a/network/relayer/variables.sh
++++ b/network/relayer/variables.sh
+@@ -2,8 +2,8 @@
+ RELAYER_BINARY=rly
+ RELAYER_DIRECTORY=./network/relayer
+ RELAYER_CONFIG_DIR=./network/relayer/config
+-PATH_NAME=test1-test2
+-CHAIN1=test-1
+-CHAIN2=test-2
++PATH_NAME=quicksilver1-stargaze1
++CHAIN1=quicksilver-1
++CHAIN2=stargaze-1
+ KEY1=testkey
+ KEY2=testkey
+\ No newline at end of file
+diff --git a/network/start.sh b/network/start.sh
+index e6147fb..989f48e 100755
+--- a/network/start.sh
++++ b/network/start.sh
+@@ -1,9 +1,15 @@
+ #!/bin/bash
+ 
+-BINARY=simd
++BINARY1=simd
++BINARY2=simd
+ CHAIN_DIR=./data
+-CHAINID_1=test-1
+-CHAINID_2=test-2
++CHAINID_1=ibc1
++CHAINID_2=ibc2
++#BINARY1=quicksilverd
++#BINARY2=starsd
++#CHAIN_DIR=./data
++#CHAINID_1=quicksilver-1
++#CHAINID_2=stargaze-1
+ GRPCPORT_1=8090
+ GRPCPORT_2=9090
+ GRPCWEB_1=8091
+@@ -12,8 +18,8 @@ GRPCWEB_2=9091
+ 
+ echo "Starting $CHAINID_1 in $CHAIN_DIR..."
+ echo "Creating log file at $CHAIN_DIR/$CHAINID_1.log"
+-$BINARY start --log_level trace --log_format json --home $CHAIN_DIR/$CHAINID_1 --pruning=nothing --grpc.address="0.0.0.0:$GRPCPORT_1" --grpc-web.address="0.0.0.0:$GRPCWEB_1" > $CHAIN_DIR/$CHAINID_1.log 2>&1 &
++$BINARY1 start --log_level debug --log_format json --home $CHAIN_DIR/$CHAINID_1 --pruning=nothing --grpc.address="0.0.0.0:$GRPCPORT_1" --grpc-web.address="0.0.0.0:$GRPCWEB_1" --api.address="tcp://0.0.0.0:1318" > $CHAIN_DIR/$CHAINID_1.log 2>&1 &
+ 
+ echo "Starting $CHAINID_2 in $CHAIN_DIR..."
+ echo "Creating log file at $CHAIN_DIR/$CHAINID_2.log"
+-$BINARY start --log_level trace --log_format json --home $CHAIN_DIR/$CHAINID_2 --pruning=nothing --grpc.address="0.0.0.0:$GRPCPORT_2" --grpc-web.address="0.0.0.0:$GRPCWEB_2" > $CHAIN_DIR/$CHAINID_2.log 2>&1 &
++$BINARY2 start --log_level debug --log_format json --home $CHAIN_DIR/$CHAINID_2 --pruning=nothing --grpc.address="0.0.0.0:$GRPCPORT_2" --grpc-web.address="0.0.0.0:$GRPCWEB_2" > $CHAIN_DIR/$CHAINID_2.log 2>&1 &
+diff --git a/tx_per_min.sh b/tx_per_min.sh
+new file mode 100755
+index 0000000..97890b5
+--- /dev/null
++++ b/tx_per_min.sh
+@@ -0,0 +1,6 @@
++for ITER in {1..100}
++do
++echo $ITER
++~/.hermes/bin/hermes --config network/hermes/config.toml tx ft-transfer --dst-chain ibc2 --src-chain ibc1 --src-port transfer --src-channel channel-0 --amount 100 --timeout-seconds 120 --key-name wallet2 --denom stake
++sleep 0.2
++done

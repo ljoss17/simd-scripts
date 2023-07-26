@@ -2,8 +2,8 @@
 RELAYER_BINARY=rly
 RELAYER_DIRECTORY=./network/relayer
 RELAYER_CONFIG_DIR=./network/relayer/config
-PATH_NAME=test1-test2
-CHAIN1=test-1
-CHAIN2=test-2
+PATH_NAME=quicksilver1-stargaze1
+CHAIN1=quicksilver-1
+CHAIN2=stargaze-1
 KEY1=testkey
 KEY2=testkey

@@ -123,10 +123,10 @@ port = 3001
 id = 'ibc1'
 rpc_addr = 'http://127.0.0.1:16657'
 grpc_addr = 'http://127.0.0.1:8090'
-event_source = { mode = 'push', url = 'ws://127.0.0.1:16657/websocket', batch_delay = '1000ms' }
+event_source = { mode = 'push', url = 'ws://127.0.0.1:16657/websocket', batch_delay = '10ms' }
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
-key_name = 'wallet1'
+key_name = 'testkey'
 store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 3000000
@@ -151,10 +151,10 @@ list = [
 id = 'ibc2'
 rpc_addr = 'http://127.0.0.1:26657'
 grpc_addr = 'http://127.0.0.1:9090'
-event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '1000ms' }
+event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '10ms' }
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
-key_name = 'wallet1'
+key_name = 'testkey'
 store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 3000000

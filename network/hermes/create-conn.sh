@@ -6,6 +6,7 @@ set -e
 
 ### Configure the clients and connection
 echo "Initiating connection handshake..."
-$HERMES_BINARY --config $CONFIG_DIR create connection --a-chain test-1 --b-chain test-2
+#$HERMES_BINARY --config $CONFIG_DIR create connection --a-chain quicksilver-1 --b-chain stargaze-1
+$HERMES_BINARY --config $CONFIG_DIR create connection --a-chain ibc1 --b-chain ibc2
 
 sleep 2
