@@ -19,6 +19,7 @@ GRPCWEB_2=9091
 echo "Starting $CHAINID_1 in $CHAIN_DIR..."
 echo "Creating log file at $CHAIN_DIR/$CHAINID_1.log"
 $BINARY1 start --log_level debug --log_format json --home $CHAIN_DIR/$CHAINID_1 --pruning=nothing --grpc.address="0.0.0.0:$GRPCPORT_1" --grpc-web.address="0.0.0.0:$GRPCWEB_1" --api.address="tcp://0.0.0.0:1318" > $CHAIN_DIR/$CHAINID_1.log 2>&1 &
+#$BINARY1 start --log_level debug --log_format json --home $CHAIN_DIR/$CHAINID_1 --pruning=nothing --grpc.address="0.0.0.0:$GRPCPORT_1" --grpc-web.address="0.0.0.0:$GRPCWEB_1" > $CHAIN_DIR/$CHAINID_1.log 2>&1 &
 
 echo "Starting $CHAINID_2 in $CHAIN_DIR..."
 echo "Creating log file at $CHAIN_DIR/$CHAINID_2.log"
