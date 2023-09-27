@@ -1,7 +1,7 @@
 #!/bin/bash
 RELAYER_BINARY=rly
-RELAYER_DIRECTORY=./network/relayer
-RELAYER_CONFIG_DIR=./network/relayer/config
+RELAYER_DIRECTORY=./network/rly
+RELAYER_CONFIG_DIR=./network/rly/config
 PATH_NAME=test1-test2
 CHAIN1=test-1
 CHAIN2=test-2
