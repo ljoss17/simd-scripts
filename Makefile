@@ -22,8 +22,11 @@ hermes-init:
 hermes-restore-keys:
 	./network/hermes/restore-keys.sh
 
-hermes-setup:
+hermes-setup-connection:
 	./network/hermes/setup-conn.sh
+
+hermes-setup-channel:
+	./network/hermes/setup-channel.sh
 
 hermes-start:
 	./network/hermes/start.sh
