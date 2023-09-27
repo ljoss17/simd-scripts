@@ -3,7 +3,7 @@
 set -e
 
 # Load shell variables
-. ./network/relayer/variables.sh
+. ./network/rly/variables.sh
 
 # Start the relayer
 echo "Starting relayer..."

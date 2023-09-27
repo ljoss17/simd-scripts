@@ -2,7 +2,7 @@
 set -e
 
 # Load shell variables
-. ./network/relayer/variables.sh
+. ./network/rly/variables.sh
 
 ### Init the config file
 $RELAYER_BINARY config init --home "$RELAYER_CONFIG_DIR"

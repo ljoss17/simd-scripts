@@ -2,7 +2,7 @@
 set -e
 
 # Load shell variables
-. ./network/relayer/variables.sh
+. ./network/rly/variables.sh
 
 ### Configure the clients and connection
 echo "Initiating client & connection handshake..."
