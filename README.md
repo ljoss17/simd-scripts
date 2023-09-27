@@ -16,6 +16,8 @@ make install
 
 ```bash
 cargo install ibc-relayer-cli --bin hermes --locked
+
+hermes version # v1.6.0
 ```
 
 ### Setup chains
