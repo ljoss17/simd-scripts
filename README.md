@@ -63,6 +63,8 @@ make hermes-start
 
 ### Ledger signing 
 
+Where `cosmos1kzjk9frgfgpguvdazesgpllwsggk8472xryjvr` is your ledger account address.
+
 Add your ledger key:
 
 ```bash
