@@ -59,3 +59,36 @@ Start relaying.
 make hermes-start
 ```
 
+---
+
+### Ledger signing 
+
+Add your ledger key:
+
+```bash
+simd keys add ledgerKey --ledger --home ./data/test-1
+```
+
+Fund your ledger account from one of the demo accounts - `wallet1`:
+
+```bash
+simd tx bank send wallet1 cosmos1kzjk9frgfgpguvdazesgpllwsggk8472xryjvr 1000000stake --from wallet1 --node tcp://localhost:16657 --home ./data/test-1 --keyring-backend test
+```
+
+Query balance of ledger account:
+
+```bash
+simd q bank balances cosmos1kzjk9frgfgpguvdazesgpllwsggk8472xryjvr --home ./data/test-1 --node tcp://localhost:16657
+```
+
+Regular bank send using ledger signing:
+
+```bash
+simd tx bank send cosmos1kzjk9frgfgpguvdazesgpllwsggk8472xryjvr cosmos17dtl0mjt3t77kpuhg2edqzjpszulwhgzuj9ljs 10stake --from ledgerKey --ledger --node tcp://localhost:16657 --home ./data/test-1
+```
+
+IBC transfer using ledger signing:
+
+```bash
+simd tx ibc-transfer transfer transfer channel-0 cosmos17dtl0mjt3t77kpuhg2edqzjpszulwhgzuj9ljs 1000stake --from ledgerKey --ledger --node tcp://localhost:16657 --home ./data/test-1
+```
