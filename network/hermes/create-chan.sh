@@ -6,6 +6,6 @@ set -e
 
 ### Configure the clients and connection
 echo "Initiating connection handshake..."
-$HERMES_BINARY --config $CONFIG_DIR create connection --a-chain ibc1 --b-chain ibc2
+$HERMES_BINARY --config ./network/hermes/config.toml create channel --a-chain ibc1 --a-connection connection-0 --a-port transfer --b-port transfer
 
 sleep 2
