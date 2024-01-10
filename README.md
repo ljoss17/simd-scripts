@@ -29,6 +29,8 @@ Change the environment variables `BINARY1` and `BINARY2` in the required files:
 * `network/start_v8.sh`
 * `network/start_v7_v8.sh`
 
+Check that the `make kill-dev` correctly kills the simd binary.
+
 For simd v7 run:
 
 * `make init-v7`

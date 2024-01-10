@@ -49,3 +49,5 @@ kill-dev:
 	-@rm -rf ./data
 	-@rm -rf ./network/relayer/config/
 	-@killall simd 2>/dev/null
+	-@killall simdv7 2>/dev/null
+	-@killall simdv8 2>/dev/null
